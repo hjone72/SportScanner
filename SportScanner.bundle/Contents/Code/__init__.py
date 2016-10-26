@@ -102,6 +102,8 @@ class SportScannerAgent(Agent.TV_Shows):
 
         # Check to see if there is a perfect match
         # Iterate through all of the sports primary names. If this fails then we can make a call for each sport and match against alternate names.
+        # In my case this will match unless there has been a serious error!
+        # https://github.com/hjone72/TheSportDB
         if potential_leagues is not None:
             for league in potential_leagues: #So far we've only made 1 API call to TSDB.
                 if show_title == league['strLeague']:
@@ -148,6 +150,7 @@ class SportScannerAgent(Agent.TV_Shows):
             Log("SS: Doing a comparison match, no exact matches found")
             for i in range(0, len(potential_leagues)):
                 # Get league details
+                # In my setup it won't ever get this far, but do we really need to make another API call to TSDB for each sport?
                 # The values won't have changed since the first run through. We could create a dict that stores each sport.
                 # This will greatly improve the speed of this step.
                 if i in cached_leagues: #Check if a cached value exists.
