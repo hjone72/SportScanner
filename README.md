@@ -36,9 +36,19 @@ The SportScanner scanner requires one of two folder structures to work correctly
 
 ##RECOMMENDED METHOD
 
-Follow the Plex standards for folder structure - TV Show\Season\<files>. For SportScanner, TV Shows = League Name. For example for 2015/2016 NHL you would do something like the following:
+Follow the Plex standards for folder structure - TV Show\Season\<files>. For SportScanner, TV Shows = League Name. For example for 2016/2017 NHL and American NFL you would do something like the following:
 
- - ~LibraryRoot/NHL/Season 1516/NHL.2015.09.25.New-York-Islanders.vs.Philadelphia-Flyers.720p.HDTV.60fps.x264-Reborn4HD_h.mp4
+ - ~LibraryRoot/NHL/1516/NHL 2016-10-18 San Jose Sharks vs New York Islanders.mkv
+ - ~LibraryRoot/American NFL/2016/American NFL 2016-10-24 Round 7 Houston Texans vs Denver Broncos.mkv
+ 
+This for is optimized for specific naming. Use the following formats:
+ - `League YYYY-MM-DD Round X Away vs Home.ext`
+ - "American NFL 2016-09-11 Round 1 San Diego Chargers vs Kansas City Chiefs"
+ - "NHL 2016-10-18 San Jose Sharks vs New York Islanders"
+ - "Formula 1 2016-10-09 Round 17"
+ - "MotoGP 2016-10-23 Round 16"
+
+Naming can be made be made easier using [SportRenamer](https://github.com/hjone72/TheSportDB)
 
 In this scenario you still need all the information in the file name, I aim to remove that requirement down the line. The only information that comes only from the folder structure is the season. 
 
