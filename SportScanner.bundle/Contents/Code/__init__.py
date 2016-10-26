@@ -223,15 +223,64 @@ class SportScannerAgent(Agent.TV_Shows):
 
                     @task
                     def UpdateEpisode(episode=episode, league_metadata=league_metadata, episode_media=episode_media, metadata=metadata):
+                        # This is where opinions start to split. Some people put events as 'Home v Away' and others put it as 'Away v Home'.
+                        # I'll change this section to work KNOWING how my files will look.
+                        # https://github.com/hjone72/TheSportDB
                         Log("SS: Matching episode number {0}: {1}".format(e, episode_media.title))
                         matched_episode = None
                         # First try and match the filename exactly as it is
-
+                        # Plus or minus a few changes ;)
+                        # Input file looks like:
+                        #    League Date Round # Away vs Home.ext
+                        #    American NFL 2016-09-18 Round 2 San Diego Chargers vs Jacksonville Jaguars.mkv
+                        #    League Date Away vs Home.ext
+                        #    NHL 2016-10-18 San Jose Sharks vs New York Islanders.mkv
+                        #    League Date Round.ext
+                        #    Formula 1 2016-10-09 Round 17.mkv
+                        
                         filename = os.path.splitext(os.path.basename(episode_media.items[0].parts[0].file))[0]
+                        Log("SS: Matching episode with filename: {0}".format(filename))
+                        if re.search(r'(Round \d{1,2})', filename) is not None:
+                            Round = re.search(r'(Round \d{1,2})', filename).group(0)
+                            filename = filename.replace(Round, '')
+                            filename = filename.replace('  ', ' ')
+                        
+                        # Event MUST have a date.
+                        eventDate = re.search(r'(\d{4}).(\d{2}).(\d{2})', filename).group(0)
+                        
+                        League = filename.split(" {0} ".format(eventDate))[0]
+                        Event = filename.split(" {0} ".format(eventDate))[1]
+                        Teams = Event.split(' vs ')
+                           
+                        #Rebuild.
+                        # Formula 1 2016-10-09 Japanese Grand Prix
+                        # American NFL 2016-10-02 Atlanta Falcons vs Carolina Panthers
+                        # American NFL 2016-09-18 San Diego Chargers vs Jacksonville Jaguars
+                        if len(Teams) != 2:
+                            TSDBName = "{0} {1}".format(League, eventDate)
+                            TSDBName = TSDBName.replace(' ', '_')
+                            filename = TSDBName
+                        else:
+                            TSDBName = "{0} {1} {2} vs {3}".format(League, eventDate, Teams[1], Teams[0])
+                            TSDBName = TSDBName.replace(' ', '_')
+                            filename = TSDBName
+
+                        try:
+                            url = "{0}searchfilename.php?e={1}".format(SPORTSDB_API, filename)
+                            results = JSON.ObjectFromString(GetResultFromNetwork(url, True))
+                            matched_episode = results['event'][0]
+                            Log("SS: Matched {0} using filename search".format(matched_episode['strEvent']))
+                        except:
+                            pass
+
+                        '''
                         whackRx = ['([hHx][\.]?264)[^0-9].*', '[^[0-9](720[pP]).*', '[^[0-9](1080[pP]).*',
                                    '[^[0-9](480[pP]).*', '[^[0-9](540[pP]).*']
                         for rx in whackRx:
                             filename = re.sub(rx, "", filename)
+                        
+                        
+                        
                         # Replace all '-' with '_'
                         filename = re.sub(r'[-\.]', '_', filename)
                         # Replace the date separators with '-'
@@ -244,6 +293,7 @@ class SportScannerAgent(Agent.TV_Shows):
                             Log("SS: Matched {0} using filename search".format(matched_episode['strEvent']))
                         except:
                             pass
+                        '''
 
                         # Then try and generate a filename that might work
                         # Take the full name of the league, add on the date of the event
@@ -317,11 +367,24 @@ class SportScannerAgent(Agent.TV_Shows):
                             return
 
                         Log("SS: Updating metadata for {0}".format(matched_episode['strEvent']))
-                        episode.title = matched_episode['strEvent']
+                        # Create a filename.
+                        if matched_episode['intRound'] is not None: #Does this sport have a round?
+                            extraInfo = "" # Blank unless changed.
+                            if matched_episode['strAwayTeam'] is not None and matched_episode['strHomeTeam'] is not None:
+                                extraInfo = " - {0} vs {1}".format(matched_episode['strAwayTeam'], matched_episode['strHomeTeam'])
+                            PlexName = "Round {0}{1}".format(matched_episode['intRound'], extraInfo)
+                        else:
+                            if matched_episode['strAwayTeam'] is not None and matched_episode['strHomeTeam'] is not None:
+                                PlexName = "{0} vs {1}".format(matched_episode['strAwayTeam'], matched_episode['strHomeTeam'])
+                            else:
+                                PlexName = matched_episode['strEvent'] # This is pretty weird. Shouldn't get to this point.
+
+                        episode.title = PlexName
                         #Generate a useful description based on the available fields
                         extra_details = ""
                         if matched_episode['strAwayTeam'] is not None and matched_episode['strHomeTeam'] is not None:
-                            extra_details = "{0} vs. {1}\n".format(matched_episode['strHomeTeam'], matched_episode['strAwayTeam'])
+                            extra_details = "Away vs Home\n"
+                            extra_details = "{0}{1} vs. {2}\n".format(extra_details, matched_episode['strAwayTeam'], matched_episode['strHomeTeam'])
                         if matched_episode['dateEvent'] is not None and matched_episode['strTime'] is not None:
                             extra_details = "{0}Played on {1} at {2}\n".format(extra_details, matched_episode['dateEvent'], matched_episode['strTime'])
                         if matched_episode['strCircuit'] is not None:
